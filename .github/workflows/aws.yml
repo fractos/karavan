@@ -38,6 +38,7 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+  
     - name: Modify deployment file
       id: modify-deployment
       shell: bash
@@ -45,16 +46,25 @@ jobs:
         IMAGE_URL: ${{ steps.build-image.outputs.image }}
       run: |
         envsubst < deployment-template.yml > deployment.yml
-    - name: action "Deploy to EKS"
+        
+    - name: Deploy to EKS
       uses: Consensys/kubernetes-action@master
       with:
         args: apply -f deployment.yml
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
-    - name: action "Verify deployment"
+    - name: Verify deployment
       uses: Consensys/kubernetes-action@master
       with:
         args: rollout status deployment/hello-world
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+        
+    - name: Respond to failure
+      if: ${{ failure() }}
+      uses: Consensys/kubernetes-action@master
+      with:
+        args: rollout undo deployment/hello-world
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
