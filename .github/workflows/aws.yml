@@ -48,10 +48,8 @@ jobs:
     - name: action "Deploy to EKS"
       uses: Consensys/kubernetes-action@master
       with:
-        args: get pods
+        args: apply -f deployment.yml
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
     - name: action "Verify deployment"
@@ -59,6 +57,4 @@ jobs:
       with:
         args: rollout status deployment/hello-world
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
