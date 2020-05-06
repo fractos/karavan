@@ -63,7 +63,7 @@ jobs:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
         
     - name: Respond to failure
-      if: ${{ failure() && steps.deploy-to-eks.outcome == "success" }}
+      if: ${{ failure() && steps.deploy-to-eks.outcome == 'success' }}
       uses: Consensys/kubernetes-action@master
       with:
         args: rollout undo deployment/hello-world
