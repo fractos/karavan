@@ -75,7 +75,7 @@ jobs:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_TITLE: Deployment to QA succeeded
         SLACK_MESSAGE: The deployment rollout succeeded
-        SLACK_COLOR: green
+        SLACK_COLOR: '#00FF00'
 
     - name: Deployment failure - Notify Slack
       if: ${{ failure() && steps.deploy-to-eks.outcome == 'Success' }}
@@ -84,7 +84,7 @@ jobs:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_TITLE: Deployment to QA failed
         SLACK_MESSAGE: The deployment rollout failed to verify
-        SLACK_COLOR: red
+        SLACK_COLOR: '#FF0000'
 
     - name: Respond to failure
       if: ${{ failure() && steps.deploy-to-eks.outcome == 'success' }}
