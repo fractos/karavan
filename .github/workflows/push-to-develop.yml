@@ -1,9 +1,9 @@
 on:
-  pull_request:
+  push:
     branches:
     - develop
 
-name: Deploy to Staging
+name: Deploy to QA
 
 jobs:
   deploy:
@@ -18,8 +18,8 @@ jobs:
       uses: bryan-nice/slack-notification@master
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_TITLE: 'Slack Notification Demo'
-        SLACK_MESSAGE: 'Demo''ing the Slack Notification'
+        SLACK_TITLE: Deploying to QA
+        SLACK_MESSAGE: Deploying HEAD of `develop` to QA
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -68,7 +68,24 @@ jobs:
         args: rollout status deployment/hello-world
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-        
+
+    - name: Deployment success - Notify Slack
+      uses: bryan-nice/slack-notification@master
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_TITLE: Deployment to QA succeeded
+        SLACK_MESSAGE: The deployment rollout succeeded
+        SLACK_COLOR: green
+
+    - name: Deployment failure - Notify Slack
+      if: ${{ failure() && steps.deploy-to-eks.outcome == 'Success' }}
+      uses: bryan-nice/slack-notification@master
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_TITLE: Deployment to QA failed
+        SLACK_MESSAGE: The deployment rollout failed to verify
+        SLACK_COLOR: red
+
     - name: Respond to failure
       if: ${{ failure() && steps.deploy-to-eks.outcome == 'success' }}
       uses: Consensys/kubernetes-action@master
