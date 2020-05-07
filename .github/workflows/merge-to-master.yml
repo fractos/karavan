@@ -1,0 +1,96 @@
+on:
+  merge:
+    branches:
+    - master
+
+name: Deploy to Production
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Deployment start - Notify Slack
+      uses: bryan-nice/slack-notification@master
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_TITLE: Deploying to Production
+        SLACK_MESSAGE: Deploying HEAD of `master` to Production
+        SLACK_COLOR: '#00FF00'
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: test
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to EKS.
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+  
+    - name: Modify deployment file
+      id: modify-deployment
+      shell: bash
+      env:
+        IMAGE_URL: ${{ steps.build-image.outputs.image }}
+      run: |
+        envsubst < deployment-template.yml > deployment.yml
+        
+    - name: Deploy to EKS
+      id: deploy-to-eks
+      uses: Consensys/kubernetes-action@master
+      with:
+        args: apply -f deployment.yml
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+
+    - name: Verify deployment
+      uses: Consensys/kubernetes-action@master
+      with:
+        args: rollout status deployment/hello-world
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+
+    - name: Deployment success - Notify Slack
+      uses: bryan-nice/slack-notification@master
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_TITLE: Deployment to Production succeeded
+        SLACK_MESSAGE: The deployment rollout succeeded
+        SLACK_COLOR: '#00FF00'
+
+    - name: Deployment failure - Notify Slack
+      if: ${{ failure() && steps.deploy-to-eks.outcome == 'Success' }}
+      uses: bryan-nice/slack-notification@master
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_TITLE: Deployment to Production failed
+        SLACK_MESSAGE: The deployment rollout failed to verify
+        SLACK_COLOR: '#FF0000'
+
+    - name: Deployment failure - Rollback deployment
+      if: ${{ failure() && steps.deploy-to-eks.outcome == 'success' }}
+      uses: Consensys/kubernetes-action@master
+      with:
+        args: rollout undo deployment/hello-world
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
