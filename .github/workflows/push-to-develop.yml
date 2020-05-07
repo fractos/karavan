@@ -14,12 +14,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Notify Slack - Start
+    - name: Deployment start - Notify Slack
       uses: bryan-nice/slack-notification@master
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_TITLE: Deploying to QA
         SLACK_MESSAGE: Deploying HEAD of `develop` to QA
+        SLACK_COLOR: '#00FF00'
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -86,7 +87,7 @@ jobs:
         SLACK_MESSAGE: The deployment rollout failed to verify
         SLACK_COLOR: '#FF0000'
 
-    - name: Respond to failure
+    - name: Deployment failure - Rollback deployment
       if: ${{ failure() && steps.deploy-to-eks.outcome == 'success' }}
       uses: Consensys/kubernetes-action@master
       with:
