@@ -54,7 +54,15 @@ jobs:
         IMAGE_URL: ${{ steps.build-image.outputs.image }}
       run: |
         envsubst < deployment-template.yml > deployment.yml
-        
+
+    - name: Deploy to EKS (dry-run)
+      id: deploy-to-eks-dry-run
+      uses: Consensys/kubernetes-action@master
+      with:
+        args: apply -f deployment.yml --dry-run=server
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+
     - name: Deploy to EKS
       id: deploy-to-eks
       uses: Consensys/kubernetes-action@master
