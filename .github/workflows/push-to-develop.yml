@@ -59,7 +59,7 @@ jobs:
       id: deploy-to-eks-dry-run
       uses: Consensys/kubernetes-action@master
       with:
-        args: apply -f deployment.yml --server-dry-run
+        args: apply -f deployment.yml --dry-run=server
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
