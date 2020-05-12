@@ -53,3 +53,5 @@ jobs:
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
         KUBECTL_VERSION: v1.14.10
+        DEPLOYMENT_FILE: deployment.yml
+        DEPLOYMENT_NAME: hello-world
