@@ -14,14 +14,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Deployment start - Notify Slack
-      uses: bryan-nice/slack-notification@master
-      env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_TITLE: Deploying to QA
-        SLACK_MESSAGE: Deploying HEAD of `develop` to QA
-        SLACK_COLOR: '#00FF00'
-
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
@@ -55,59 +47,9 @@ jobs:
       run: |
         envsubst < deployment-template.yml > deployment.yml
 
-    - name: Deploy to EKS (dry-run)
-      id: deploy-to-eks-dry-run
-      uses: Consensys/kubernetes-action@master
-      with:
-        args: apply -f deployment.yml --server-dry-run
+    - name: Test Deployment
+      id: test-deployment
+      uses: fractos/kubectl-deploy@master
       env:
         KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-
-    - name: Deploy to EKS
-      id: deploy-to-eks
-      uses: Consensys/kubernetes-action@master
-      with:
-        args: apply -f deployment.yml
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-
-    - name: Verify deployment
-      uses: Consensys/kubernetes-action@master
-      with:
-        args: rollout status deployment/hello-world
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-
-    - name: Deployment success - Notify Slack
-      uses: bryan-nice/slack-notification@master
-      env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_TITLE: Deployment to QA succeeded
-        SLACK_MESSAGE: The deployment rollout succeeded
-        SLACK_COLOR: '#00FF00'
-
-    - name: Deployment failure - Notify Slack
-      if: ${{ failure() && steps.deploy-to-eks.outcome == 'success' }}
-      uses: bryan-nice/slack-notification@master
-      env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_TITLE: Deployment to QA failed
-        SLACK_MESSAGE: The deployment rollout failed to verify
-        SLACK_COLOR: '#FF0000'
-
-    - name: Deployment failure - Rollback deployment
-      if: ${{ failure() && steps.deploy-to-eks.outcome == 'success' }}
-      uses: Consensys/kubernetes-action@master
-      with:
-        args: rollout undo deployment/hello-world
-      env:
-        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-
-    - name: General failure - Notify Slack
-      if: ${{ failure() && steps.deploy-to-eks.outcome == 'skipped' }}
-      uses: bryan-nice/slack-notification@master
-      env:
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_TITLE: Workflow failed
-        SLACK_MESSAGE: The workflow failed before deployment was attempted
-        SLACK_COLOR: '#FF0000'
+        KUBECTL_VERSION: v1.14.10
