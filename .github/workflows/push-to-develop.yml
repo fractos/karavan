@@ -53,3 +53,33 @@ jobs:
         KUBECTL_VERSION: v1.14.10
         DEPLOYMENT_FILE: deployment.yml
         DEPLOYMENT_NAME: hello-world
+
+    - name: Rollback Success
+      id: rollback-success
+      if: ${{ failure() && steps.test-deployment.outputs.status == 'rollbacksuccess' }}
+      run: |
+        echo "Deployment failed - rollback was successful"
+        
+    - name: Rollback failed
+      id: rollback-failed
+      if: ${{ failure() && steps.test-deployment.outputs.status == 'rollbackfailed' }}
+      run: |
+        echo "Deployment failed - rollback failed"
+        
+    - name: Rollback error
+      id: rollback-error
+      if: ${{ failure() && steps.test-deployment.outputs.status == 'rollbackerror' }}
+      run: |
+        echo "Deployment failed - rollback error"
+        
+    - name: Deploy error
+      id: deploy-error
+      if: ${{ failure() && steps.test-deployment.outputs.status == 'deployerror' }}
+      run: |
+        echo "Deployment failed - deploy error"
+        
+    - name: Deploy failed
+      id: deploy-failed
+      if: ${{ failure() && steps.test-deployment.outputs.status == 'deployfailed' }}
+      run: |
+        echo "Deployment failed - not applied"
