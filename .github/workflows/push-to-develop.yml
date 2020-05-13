@@ -53,7 +53,6 @@ jobs:
         KUBECTL_VERSION: v1.14.10
         DEPLOYMENT_FILE: deployment.yml
         DEPLOYMENT_NAME: hello-world
-        DRY_RUN: --server-dry-run
 
     - name: Show output
       id: show-output
