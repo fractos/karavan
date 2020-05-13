@@ -54,6 +54,12 @@ jobs:
         DEPLOYMENT_FILE: deployment.yml
         DEPLOYMENT_NAME: hello-world
 
+    - name: Show output
+      id: show-output
+      if: ${{ failure() }}
+      run: |
+        echo "status was ${{ steps.test-deployment.outputs.status }}"
+
     - name: Rollback Success
       id: rollback-success
       if: ${{ failure() && steps.test-deployment.outputs.status == 'rollbacksuccess' }}
